@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Checkout - Student Kitchens</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body { background: #f8f9fa; padding: 20px; text-align: center; }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      text-align: left;
+    }
+    h1 { text-align: center; margin-bottom: 20px; }
+    .checkout-list {
+      list-style: none;
+      padding: 0;
+    }
+    .checkout-list li {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    .total {
+      font-size: 18px;
+      font-weight: bold;
+      text-align: right;
+      margin-top: 10px;
+    }
+    .address-input {
+      margin-top: 20px;
+    }
+    .address-input label {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 5px;
+    }
+    .address-input input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    .button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-top: 20px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .button:hover { background: #0056b3; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Checkout</h1>
+    <ul class="checkout-list" id="checkout-items"></ul>
+    
+    <p class="total">Subtotal: ₹<span id="subtotal">0</span></p>
+    <p class="total">Tax (18%): ₹<span id="tax">0</span></p>
+    <p class="total"><strong>Grand Total: ₹<span id="grand-total">0</span></strong></p>
+
+    <div class="address-input">
+      <label for="address">Delivery Address:</label>
+      <input type="text" id="address" placeholder="Delivery Address" readonly />
+    </div>
+
+    <button class="button" onclick="proceedToPayment()">Place Order</button>
+  </div>
+
+  <script>
+    async function loadCart() {
+      const cart = JSON.parse(sessionStorage.getItem("cart")) || [];
+      const subtotal = parseFloat(sessionStorage.getItem("totalPrice")) || 0;
+      const tax = (subtotal * 0.18).toFixed(2);
+      const grandTotal = (subtotal + parseFloat(tax)).toFixed(2);
+
+      const checkoutList = document.getElementById("checkout-items");
+      const subtotalDisplay = document.getElementById("subtotal");
+      const taxDisplay = document.getElementById("tax");
+      const grandTotalDisplay = document.getElementById("grand-total");
+
+      checkoutList.innerHTML = "";
+      cart.forEach(item => {
+        const li = document.createElement("li");
+        li.innerHTML = `<span>${item.name} (x${item.quantity})</span> <span>₹${item.price * item.quantity}</span>`;
+        checkoutList.appendChild(li);
+      });
+
+      subtotalDisplay.textContent = subtotal;
+      taxDisplay.textContent = tax;
+      grandTotalDisplay.textContent = grandTotal;
+
+      sessionStorage.setItem("grandTotal", grandTotal);
+    }
+
+    async function loadAddress() {
+      const email = localStorage.getItem("userEmail");
+
+      if (!email) {
+        alert("No user logged in.");
+        window.location.href = "login.html"; // Optional: Redirect to login
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:3000/get-address?email=${email}`);
+        const data = await response.json();
+
+        if (response.ok) {
+          document.getElementById("address").value = data.address;
+        } else {
+          console.error("Failed to fetch address:", data.error);
+        }
+      } catch (error) {
+        console.error("Error fetching address:", error);
+      }
+    }
+
+    async function proceedToPayment() {
+      const address = document.getElementById("address").value.trim();
+      const email = localStorage.getItem("userEmail");
+      const restaurantName = sessionStorage.getItem("restaurantName");
+      const cart = JSON.parse(sessionStorage.getItem("cart")) || [];
+      const grandTotal = parseFloat(sessionStorage.getItem("grandTotal")) || 0;
+
+      if (!email || !restaurantName || cart.length === 0) {
+        alert("Missing order data.");
+        return;
+      }
+
+      if (!address) {
+        alert("Delivery address is required.");
+        return;
+      }
+
+      try {
+        const response = await fetch("http://localhost:3000/place-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_email: email,
+            restaurant_name: restaurantName,
+            items: cart,
+            total_amount: grandTotal,
+            delivery_address: address
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert("Order placed successfully!");
+          sessionStorage.removeItem("cart");
+          sessionStorage.removeItem("totalPrice");
+          sessionStorage.removeItem("grandTotal");
+          sessionStorage.removeItem("restaurantName");
+
+          window.location.href = "payment.html";  // ✅ Go to payment page now
+        } else {
+          alert("Order failed: " + data.error);
+        }
+      } catch (error) {
+        console.error("Error placing order:", error);
+        alert("Error placing order.");
+      }
+    }
+
+    window.onload = function () {
+      loadCart();
+      loadAddress();
+    };
+  </script>
+
+</body>
+</html>
+

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Track Order - Student Kitchens</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body {
+      background: #f8f9fa;
+      display: flex; flex-direction: column;
+      align-items: center; text-align: center;
+      padding: 20px;
+    }
+    .tracking-container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      margin-top: 50px;
+    }
+    h1 {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .info {
+      font-size: 18px;
+      color: #007bff;
+      margin-bottom: 10px;
+    }
+    .phone {
+      display: inline-block;
+      background: #007bff;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 5px;
+      text-decoration: none;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+    .phone:hover {
+      background: #0056b3;
+    }
+    .time {
+      font-size: 20px;
+      font-weight: bold;
+      color: #28a745;
+      margin-top: 15px;
+    }
+    .back-button {
+      margin-top: 20px;
+      padding: 10px 15px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .back-button:hover {
+      background: #b02a37;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="tracking-container" id="tracking-container">
+    <h1>Loading your order...</h1>
+  </div>
+
+  <script>
+    function goBack() {
+      window.location.href = "dashboard.html";
+    }
+
+    function updateWaitingTime(orderTime) {
+      const timeElement = document.getElementById("waiting-time");
+      const now = new Date();
+      const placedTime = new Date(orderTime);
+      const diffMs = now - placedTime;
+      let remaining = Math.max(30 - Math.floor(diffMs / 60000), 0);
+
+      if (remaining > 0) {
+        timeElement.textContent = remaining + " min";
+        const interval = setInterval(() => {
+          remaining--;
+          if (remaining > 0) {
+            timeElement.textContent = remaining + " min";
+          } else {
+            timeElement.textContent = "Arriving now!";
+            clearInterval(interval);
+          }
+        }, 60000);
+      } else {
+        timeElement.textContent = "Arriving now!";
+      }
+    }
+
+    function loadOrderDetails() {
+      const userEmail = localStorage.getItem("userEmail");
+
+      if (!userEmail) {
+        document.getElementById("tracking-container").innerHTML = `
+          <h1>Live Order Tracking</h1>
+          <p class="info">Please log in to track your order.</p>
+          <button class="back-button" onclick="goBack()">Back to Dashboard</button>
+        `;
+        return;
+      }
+
+      fetch("http://localhost:3000/track-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail })
+      })
+      .then(response => response.json())
+      .then(order => {
+        if (order && order.restaurant_name) {
+          document.getElementById("tracking-container").innerHTML = `
+            <h1>Live Order Tracking</h1>
+            <p class="info"><strong>Restaurant:</strong> ${order.restaurant_name}</p>
+            <p class="info"><strong>Delivery Address:</strong> ${order.delivery_address}</p>
+            <p class="info"><strong>Total:</strong> ₹${order.total_amount}</p>
+            <p class="info"><strong>Delivery Partner:</strong> ${order.delivery_partner_name || "Not Assigned"}</p>
+            <p class="time">Estimated Arrival: <span id="waiting-time">30 min</span></p>
+            <button class="back-button" onclick="goBack()">Back to Dashboard</button>
+          `;
+          updateWaitingTime(order.order_time);
+        } else {
+          document.getElementById("tracking-container").innerHTML = `
+            <h1>Live Order Tracking</h1>
+            <p class="info">No active orders found.</p>
+            <button class="back-button" onclick="goBack()">Back to Dashboard</button>
+          `;
+        }
+      })
+      .catch(err => {
+        console.error("Error fetching order:", err);
+        document.getElementById("tracking-container").innerHTML = `
+          <h1>Live Order Tracking</h1>
+          <p class="info">Failed to load order info.</p>
+          <button class="back-button" onclick="goBack()">Back to Dashboard</button>
+        `;
+      });
+    }
+
+    loadOrderDetails();
+  </script>
+
+</body>
+</html>
+

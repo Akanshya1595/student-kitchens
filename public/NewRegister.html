@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Student Kitchens</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        body {
+            background: url('https://source.unsplash.com/1600x900/?restaurant') no-repeat center center fixed;
+            background-size: cover;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.9); padding: 20px;
+            border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            width: 350px; text-align: center;
+        }
+        h1 { font-size: 24px; color: #333; margin-bottom: 10px; }
+        h2 { margin-bottom: 20px; color: #555; }
+        form { display: flex; flex-direction: column; }
+        label { text-align: left; margin-top: 10px; font-weight: bold; color: #555; }
+        input {
+            padding: 10px; margin-top: 5px; border: 1px solid #ccc;
+            border-radius: 5px; font-size: 16px;
+        }
+        button {
+            background: #007bff; color: white; border: none;
+            padding: 12px; margin-top: 15px; cursor: pointer;
+            border-radius: 5px; font-size: 16px; transition: 0.3s;
+        }
+        button:hover { background: #0056b3; }
+        p { margin-top: 15px; font-size: 14px; }
+        a { color: #28a745; text-decoration: none; font-weight: bold; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Student Kitchens</h1>
+        <h2>Register</h2>
+        <form onsubmit="redirectToDashboard(event)">
+            <label for="unique_ID">Unique ID</label>
+            <input type="text" id="unique_ID" name="unique_ID" placeholder="uniqueID" required>
+            <label for="name">Full Name</label>
+            <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" placeholder="Create a password" required>
+            <label for="confirm-password">Confirm Password</label>
+            <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm your password" required>
+            <button type="submit">Sign Up</button>
+        </form>
+        <p>Already have an account? <a href="login.html">Login here</a></p>
+    </div>
+
+    <script>
+        async function redirectToDashboard(event) {
+            event.preventDefault();
+    
+            const id = document.getElementById("unique_ID").value;
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            const confirmPassword = document.getElementById("confirm-password").value;
+    
+            if (password !== confirmPassword) {
+                alert("Passwords do not match.");
+                return;
+            }
+    
+            try {
+                const response = await fetch("http://localhost:3000/register", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ id, name, email, password })
+                });
+    
+                const data = await response.json();
+    
+                if (response.ok) {
+                    alert("Registration successful!");
+                    window.location.href = "login.html"; // Redirect to login
+                } else {
+                    alert(data.error || "Registration failed");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Something went wrong.");
+            }
+        }
+    </script>
+    
+</body>
+</html>

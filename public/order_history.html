@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Order History - Student Kitchens</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body {
+      background: #f8f9fa;
+      display: flex; flex-direction: column;
+      align-items: center; text-align: center;
+      padding: 20px;
+    }
+    .history-container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
+    }
+    h1 {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .order {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: background 0.3s;
+      text-align: left;
+    }
+    .order:hover {
+      background: #f1f1f1;
+    }
+    .order h2 {
+      font-size: 18px;
+      color: #007bff;
+      margin-bottom: 5px;
+    }
+    .order p {
+      font-size: 14px;
+      color: #555;
+    }
+    .order-details {
+      display: none;
+      padding-top: 10px;
+      border-top: 1px solid #ddd;
+      font-size: 14px;
+      color: #333;
+    }
+    .back-button {
+      margin-top: 20px;
+      padding: 10px 15px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .back-button:hover {
+      background: #b02a37;
+    }
+  </style>
+</head>
+<body>
+
+<div class="history-container">
+  <h1>Order History</h1>
+  <div id="orders"></div>
+  <button class="back-button" onclick="goBack()">Back to Dashboard</button>
+</div>
+
+<script>
+  function toggleDetails(orderElement) {
+    const details = orderElement.querySelector(".order-details");
+    details.style.display = details.style.display === "block" ? "none" : "block";
+  }
+
+  function goBack() {
+    window.location.href = "dashboard.html";
+  }
+
+  async function loadOrders() {
+    const email = localStorage.getItem("userEmail");
+    if (!email) {
+      alert("No user logged in.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3000/order-history?email=${encodeURIComponent(email)}`);
+      const data = await response.json();
+
+      const ordersContainer = document.getElementById("orders");
+      ordersContainer.innerHTML = "";
+
+      if (data.length === 0) {
+        ordersContainer.innerHTML = "<p>No orders found.</p>";
+        return;
+      }
+
+      data.forEach(order => {
+        const orderDiv = document.createElement("div");
+        orderDiv.className = "order";
+        orderDiv.onclick = function () { toggleDetails(orderDiv); };
+
+        const date = new Date(order.order_time).toLocaleString();
+
+        const foodItemsHTML = order.food_items.map(item => 
+          `<p>${item.name} - ₹${item.price} x ${item.quantity}</p>`
+        ).join('');
+
+        orderDiv.innerHTML = `
+          <h2>${order.restaurant_name} - ${date}</h2>
+          <p>Total: ₹${order.total_amount}</p>
+          <div class="order-details">
+            ${foodItemsHTML}
+            <p><strong>Delivery Address:</strong> ${order.delivery_address}</p>
+          </div>
+        `;
+
+        ordersContainer.appendChild(orderDiv);
+      });
+
+    } catch (error) {
+      console.error("Error loading order history:", error);
+    }
+  }
+
+  loadOrders();
+</script>
+
+</body>
+</html>
+

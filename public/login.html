@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Student Kitchens</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body {
+      background: url('https://source.unsplash.com/1600x900/?food') no-repeat center center fixed;
+      background-size: cover;
+      display: flex; justify-content: center; align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.9); padding: 20px;
+      border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      width: 320px; text-align: center;
+    }
+    h1 { font-size: 24px; color:#333; margin-bottom: 10px; }
+    h2 { margin-bottom: 20px; color: #555; }
+    form { display: flex; flex-direction: column; }
+    label { text-align: left; margin-top: 10px; font-weight: bold; color: #555; }
+    input {
+      padding: 10px; margin-top: 5px; border: 1px solid #ccc;
+      border-radius: 5px; font-size: 16px;
+    }
+    button {
+      background: #28a745; color: white; border: none;
+      padding: 12px; margin-top: 15px; cursor: pointer;
+      border-radius: 5px; font-size: 16px; transition: 0.3s;
+    }
+    button:hover { background: #218838; }
+    p { margin-top: 15px; font-size: 14px; }
+    a { color: #007bff; text-decoration: none; font-weight: bold; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Student Kitchens</h1>
+    <h2>Login</h2>
+    <form onsubmit="redirectToDashboard(event)">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" placeholder="Enter your email" required>
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" placeholder="Enter your password" required>
+      <button type="submit">Login</button>
+    </form>
+    <p>Don't have an account? <a href="./NewRegister.html" target="_blank">Register here</a></p>
+  </div>
+
+  <script>
+    async function redirectToDashboard(event) {
+      event.preventDefault();
+  
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+  
+      try {
+        const response = await fetch("http://localhost:3000/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ email, password })
+        });
+  
+        const data = await response.json();
+  
+        if (response.ok) {
+          // ✅ Store user email, name, and admin status in localStorage
+          localStorage.setItem("userEmail", data.email);
+          localStorage.setItem("userName", data.name); // Ensure backend sends 'name'
+          localStorage.setItem("is_admin", data.is_admin); // Store admin status
+  
+          // Redirect based on admin status
+          if (data.is_admin) {
+            window.location.href = "admin.html"; // Redirect to admin page
+          } else {
+            window.location.href = "dashboard.html"; // Redirect to regular user dashboard
+          }
+        } else {
+          alert(data.error || "Login failed");
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        alert("Something went wrong.");
+      }
+    }
+  </script>
+  
+</body>
+</html>

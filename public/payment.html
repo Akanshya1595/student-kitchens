@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - Student Kitchens</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        body { background: #f8f9fa; padding: 20px; text-align: center; }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+        h1 { text-align: center; margin-bottom: 20px; }
+        .payment-options {
+            list-style: none;
+            padding: 0;
+        }
+        .payment-options li {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px 0;
+            cursor: pointer;
+            font-size: 18px;
+            text-align: center;
+        }
+        .payment-options li:hover { background: #e9ecef; }
+        .button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Choose Payment Method</h1>
+        <p><strong>Grand Total: ₹<span id="grand-total">0</span></strong></p>
+
+        <ul class="payment-options">
+            <li onclick="payOnline('UPI')">Pay via UPI (Google Pay, PhonePe)</li>
+            <li onclick="payOnline('Card')">Pay via Credit/Debit Card</li>
+            <li onclick="payCOD()">Cash on Delivery (COD)</li>
+        </ul>
+    </div>
+
+    <script>
+        function loadOrderDetails() {
+            const userEmail = localStorage.getItem("userEmail");
+
+            if (!userEmail) {
+                alert("Please log in to proceed.");
+                window.location.href = "login.html"; // Redirect to login page if not logged in
+                return;
+            }
+
+            fetch("http://localhost:3000/get-order-total", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: userEmail }) // Send email to fetch order total
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.total_amount) {
+                    sessionStorage.setItem("grandTotal", data.total_amount);
+                    document.getElementById("grand-total").textContent = data.total_amount;
+                } else {
+                    alert("No active order found.");
+                    window.location.href = "dashboard.html"; // Redirect to dashboard if no active order
+                }
+            })
+            .catch(err => {
+                console.error("Error fetching order total:", err);
+                alert("Failed to load order total.");
+            });
+        }
+
+        let grandTotal = sessionStorage.getItem("grandTotal") || "0";
+        document.getElementById("grand-total").textContent = grandTotal;
+
+        function payOnline(method) {
+            let options = {
+                "key": "rzp_test_1234567890abcdef", // Replace with Razorpay Key ID
+                "amount": grandTotal * 100, // Convert to paise
+                "currency": "INR",
+                "name": "Student Kitchens",
+                "description": `Payment via ${method}`,
+                "handler": function (response) {
+                    alert(`Payment Successful! Payment ID: ${response.razorpay_payment_id}`);
+                    sessionStorage.clear();
+                    window.location.href = "dashboard.html"; 
+                },
+                "theme": {
+                    "color": "#007bff"
+                }
+            };
+            let rzp = new Razorpay(options);
+            rzp.open();
+        }
+
+        function payCOD() {
+            alert("Order placed successfully! Payment to be made on delivery.");
+            sessionStorage.clear();
+            window.location.href = "dashboard.html"; 
+        }
+
+        loadOrderDetails(); // Load order details when the page is loaded
+    </script>
+
+</body>
+</html>
